@@ -29,18 +29,16 @@
             android:textSize="30sp"
             android:textStyle="bold" />
 
-
-        <de.hdodenhof.circleimageview.CircleImageView xmlns:app="http://schemas.android.com/apk/res-auto"
+        <ImageView
             android:id="@+id/ivImg"
             android:layout_width="150dp"
             android:layout_height="150dp"
             android:layout_gravity="center"
             android:layout_marginBottom="8dp"
-            android:src="@drawable/placeholder"
-            app:civ_border_color="#FFFFFF"
-            app:civ_border_width="2dp" />
+            android:src="@drawable/logo" />
 
         <Button
+            android:visibility="gone"
             android:id="@+id/btnUploadImage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
