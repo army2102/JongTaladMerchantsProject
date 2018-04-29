@@ -624,14 +624,6 @@ public class LockReservationFragment extends Fragment implements View.OnClickLis
                                 name + " " +
                                 phonenumber + "\n" +
                                 productType + "\n")
-                        .setPositiveButton("ยกเลิกการจอง", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialogInterface, int i) {
-                                cancelLockReservation cancelLockReservation = new cancelLockReservation();
-                                cancelLockReservation.execute(lockNameForDelete, marketName, timeDate);
-
-                            }
-                        })
                         .setNegativeButton("ปิดหน้าจอ", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
