@@ -2,8 +2,8 @@
     <string name="app_name">Merchants</string>
     <string name="open_drawer">Open Menu</string>
     <string name="close_drawer">Close Menu</string>
-    <string name="dialog_lock_reserved">จองล็อคสำเร็จ</string>
-    <string name="ok">ยืนยัน</string>
+    <string name="dialog_lock_reserved">Reserve success</string>
+    <string name="ok">OK</string>
     <string name="dialog_market_rule">Test</string>
-    <string name="dialog_lock_maximum_reserved">จองล็อคเกิน 3 ล็อค</string>
+    <string name="dialog_lock_maximum_reserved">You can not reserve more than 3 locks</string>
 </resources>

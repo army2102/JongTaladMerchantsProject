@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 
 import com.example.teerasaksathu.customers.R;
 import com.example.teerasaksathu.customers.fragment.LoginFragment;
@@ -19,12 +20,11 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
 
         SharedPreferences prefs = getSharedPreferences("user_token", Context.MODE_PRIVATE);
-        String loginToken = prefs.getString("logined", null);
+        int loginToken = prefs.getInt("logined",0);
 
-
-        if(loginToken != null){
+        if(loginToken != 0){
             Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-            intent.putExtra("username", loginToken);
+            intent.putExtra("merchantId", loginToken);
             startActivity(intent);
             finish();
         }

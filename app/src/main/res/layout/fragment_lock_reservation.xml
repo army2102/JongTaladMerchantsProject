@@ -9,6 +9,7 @@
         android:scaleType="centerCrop"
         android:src="@drawable/bg" />
 
+
     <android.support.v4.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -22,7 +23,6 @@
             android:orientation="vertical">
 
             <ImageView
-                android:visibility="invisible"
                 android:id="@+id/ivRefresh"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -30,10 +30,11 @@
                 android:src="@drawable/ic_refresh_white" />
 
             <TextView
+                android:id="@+id/tvMarketName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="ผังตลาด"
+                android:text="Market Name"
                 android:textColor="@color/text_color"
                 android:textSize="30sp"
                 android:textStyle="bold" />
@@ -45,7 +46,8 @@
                 android:gravity="center"
                 android:text="@string/app_name"
                 android:textColor="@color/lockStatausNotOuccupied"
-                android:textSize="18sp" />
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
             <RelativeLayout
                 android:layout_width="match_parent"
@@ -292,8 +294,6 @@
                     android:gravity="center"
                     android:text="D9"
                     android:textColor="@color/lockNameColor" />
-
-
             </RelativeLayout>
 
             <LinearLayout
@@ -321,7 +321,7 @@
                         android:id="@+id/textView"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="จอง"
+                        android:text="Reserved"
                         android:textColor="@color/text_color"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -344,7 +344,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="ว่าง"
+                        android:text="Empty"
                         android:textColor="@color/text_color"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -371,7 +371,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="ประเภทสินค้า:"
+                        android:text="Product Type:"
                         android:textColor="@color/text_color"
                         android:textStyle="bold" />
 
@@ -392,7 +392,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="ชื่อล็อค:"
+                        android:text="Lock Name:"
                         android:textColor="@color/text_color"
                         android:textStyle="bold" />
 
@@ -413,7 +413,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_alignParentBottom="true"
-                android:text="จองล็อค" />
+                android:text="Submit" />
+
 
         </LinearLayout>
 

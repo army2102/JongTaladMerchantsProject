@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         android:gravity="center"
-        android:text="รายชื่อตลาด"
+        android:text="Market List"
         android:textColor="@color/text_color"
         android:textSize="30sp"
         android:textStyle="bold" />

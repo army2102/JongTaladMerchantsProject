@@ -1,5 +1,6 @@
 package com.example.teerasaksathu.customers.fragment;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -20,6 +21,10 @@ import com.example.teerasaksathu.customers.activity.MainActivity;
 import com.example.teerasaksathu.customers.activity.RegisterActivity;
 import com.google.firebase.messaging.FirebaseMessaging;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 
 import okhttp3.FormBody;
@@ -38,6 +43,8 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
     private EditText etPassword;
     private String username;
     private String password;
+
+    private ProgressDialog loadingAuthDialog;
 
     public LoginFragment() {
         super();
@@ -60,7 +67,6 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
 
     private void initInstances(View rootView) {
         // Init 'View' instance(s) with rootView.findViewById here
-
 
 
         btnRegisterPage = rootView.findViewById(R.id.btnRegisterPage);
@@ -132,12 +138,13 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
     }
 
     private class Login extends AsyncTask<String, Void, String> {
-        private static final String URL = "http://www.jongtalad.com/doc/login_merchants.php";
+        private static final String URL = "https://jongtalad-web-api.herokuapp.com/auth/login/merchant";
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            Toast.makeText(getActivity(), "Loading...", Toast.LENGTH_SHORT).show();
+            loadingAuthDialog = ProgressDialog.show(getContext(), "Checking", "Loading...", true, false);
+
         }
 
         @Override
@@ -171,21 +178,33 @@ public class LoginFragment extends Fragment implements View.OnClickListener {
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
-            Log.d("Post", "==>" + s);
-            //TODO Change .trim() get it out
-            if (s.trim().equals("1")) {
+            int resCode;
+            int merchantId;
+            try {
+                JSONObject obj = new JSONObject(s);
+                resCode = obj.getInt("code");
+                merchantId = obj.getJSONArray("response").getJSONObject(0).getInt("merchantId");
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+                resCode = 404;
+                merchantId = 0;
+            }
+
+            loadingAuthDialog.dismiss();
+            if (resCode == 200) {
                 FirebaseMessaging.getInstance().subscribeToTopic("logined");
-                Toast.makeText(getActivity(), "Login สำเร็จ", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "Login success", Toast.LENGTH_SHORT).show();
                 SharedPreferences prefs = getActivity().getSharedPreferences("user_token", Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = prefs.edit();
-                editor.putString("logined", username);
+                editor.putInt("logined", merchantId);
                 editor.apply();
                 Intent intent = new Intent(getActivity(), MainActivity.class);
-                intent.putExtra("username", username);
+                intent.putExtra("merchantId", merchantId);
                 startActivity(intent);
                 getActivity().finish();
             } else {
-                Toast.makeText(getActivity(), "Username หรือ Password ผิด", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "Wrong username or password", Toast.LENGTH_SHORT).show();
             }
         }
     }

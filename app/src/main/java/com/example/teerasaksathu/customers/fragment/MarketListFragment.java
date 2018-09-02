@@ -1,5 +1,6 @@
 package com.example.teerasaksathu.customers.fragment;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -29,9 +30,8 @@ import okhttp3.Response;
 
 public class MarketListFragment extends Fragment {
     ListView marketList;
-    String[] nameMarket, marketAddress;
-    String[] pictureUrl;
-
+    int merchantId;
+    private ProgressDialog loadingDialog;
 
     public MarketListFragment() {
         super();
@@ -53,26 +53,23 @@ public class MarketListFragment extends Fragment {
     }
 
     private void initInstances(View rootView) {
-        // Init 'View' instance(s) with rootView.findViewById here
+        loadingDialog = ProgressDialog.show(getContext(), "Fetch market list", "Loading...", true, false);
+
         loadMarketList loadMarketList = new loadMarketList();
         loadMarketList.execute();
+
+
+        merchantId = MainActivity.intent.getIntExtra("merchantId", 0);
 
         marketList = rootView.findViewById(R.id.marketList);
         marketList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                if (i == 0) {
-                    Intent intent = new Intent(getActivity(), LockReservationActivity.class);
-                    intent.putExtra("username", MainActivity.intentUsername);
-                    startActivity(intent);
-                }
-
-//                More than one market
-//                if (i == 1) {
-//                    Intent intent = new Intent(getActivity(), LockReservationActivity.class);
-//                    intent.putExtra("username", MainActivity.intentUsername);
-//                    startActivity(intent);
-//                }
+                Intent intent = new Intent(getActivity(), LockReservationActivity.class);
+                intent.putExtra("merchantId", merchantId);
+                intent.putExtra("marketId", (int) adapterView.getItemIdAtPosition(i));
+                intent.putExtra("marketName", "" + adapterView.getItemAtPosition(i));
+                startActivity(intent);
             }
         });
 
@@ -111,13 +108,14 @@ public class MarketListFragment extends Fragment {
 
 
     private class loadMarketList extends AsyncTask<Void, Void, String> {
-        public static final String URL = "http://www.jongtalad.com/doc/load_market_list.php";
+        public static final String URL = "https://jongtalad-web-api.herokuapp.com/merchants/markets";
 
         @Override
         protected String doInBackground(Void... voids) {
             OkHttpClient okHttpClient = new OkHttpClient();
             Request request = new Request.Builder()
                     .url(URL)
+                    .get()
                     .build();
 
             try {
@@ -137,36 +135,40 @@ public class MarketListFragment extends Fragment {
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
+            int[] marketId;
+            String[] marketName;
+            String[] marketAddress;
+            String[] pictureUrl;
 
             try {
-                JSONArray jsonArray = new JSONArray(s);
-                nameMarket = new String[jsonArray.length()];
-                pictureUrl = new String[jsonArray.length()];
-                marketAddress = new String[jsonArray.length()];
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject jsonObject = jsonArray.getJSONObject(i);
-                    nameMarket[i] = (jsonObject.getString("name"));
-                    pictureUrl[i] = (jsonObject.getString("picture_url"));
-                    marketAddress[i] = (jsonObject.getString("address"));
+                JSONObject obj = new JSONObject(s);
+                JSONArray res = obj.getJSONArray("response");
+                marketId = new int[res.length()];
+                marketName = new String[res.length()];
+                marketAddress = new String[res.length()];
+                pictureUrl = new String[res.length()];
+                for (int i = 0; i < res.length(); i++) {
+                    marketId[i] = res.getJSONObject(i).getInt("marketId");
+                    marketName[i] = res.getJSONObject(i).getString("marketName");
+                    marketAddress[i] = res.getJSONObject(i).getString("marketAddress");
+                    pictureUrl[i] = res.getJSONObject(i).getString("pictureUrl");
                 }
-
-                MarketListAdapter marketListAdapter = new MarketListAdapter(getActivity(), nameMarket, pictureUrl, marketAddress, pictureUrl);
-                marketList.setAdapter(marketListAdapter);
-
             } catch (JSONException e) {
-                nameMarket = new String[1];
-                pictureUrl = new String[1];
-                marketAddress = new String[1];
-
-                nameMarket[0] = "none";
-                pictureUrl[0] = "none";
-                marketAddress[0] = "none";
-
                 e.printStackTrace();
+
+                marketId = new int[1];
+                marketName = new String[1];
+                marketAddress = new String[1];
+                pictureUrl = new String[1];
+
+                marketId[0] = 0;
+                marketName[0] = "None";
+                marketAddress[0] = "None";
+                pictureUrl[0] = "None";
             }
-            Log.d("Uri", String.valueOf(pictureUrl));
-
-
+            MarketListAdapter marketListAdapter = new MarketListAdapter(getActivity(), marketId, marketName, marketAddress, pictureUrl);
+            marketList.setAdapter(marketListAdapter);
+            loadingDialog.dismiss();
         }
     }
 }

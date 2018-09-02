@@ -1,27 +1,26 @@
 package com.example.teerasaksathu.customers.fragment;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.teerasaksathu.customers.R;
-import com.example.teerasaksathu.customers.activity.MainActivity;
+import com.example.teerasaksathu.customers.activity.LockReservationActivity;
 import com.example.teerasaksathu.customers.fragment.dialog.LockMaximumReservedDialogFragment;
 import com.example.teerasaksathu.customers.fragment.dialog.LockReservedDialogFragment;
-import com.google.firebase.messaging.FirebaseMessaging;
+import com.example.teerasaksathu.customers.fragment.dialog.MarketRuleDialogFragment;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -43,12 +42,25 @@ public class LockReservationFragment extends Fragment implements View.OnClickLis
     private Spinner spLock;
     private ImageView ivRefresh;
 
-    private String lockNameForDelete;
-    private String marketName = "RMUTT Walking Street";
-    private String dataLock;
-    private String timeDate;
-    private String username;
+    private TextView tvMarketName;
 
+    ProgressDialog loadingMarketDataDialog;
+    ProgressDialog loadingMarketDetailDialog;
+    ProgressDialog loadingRefreshMarketLockDialog;
+
+    // Sent from MainActivity
+    private int merchantId;
+    private int marketId;
+    private String marketName;
+
+    // Use for reserve market lock
+    private final int price = 100;
+    private int[] marketLockId = {0};
+    private String[] marketLockName = {"none"};
+    private int[] productTypeId = {0};
+    private String[] productTypeName = {"none"};
+
+    private String timeDate;
 
     private TextView tvA1;
     private TextView tvA2;
@@ -93,22 +105,10 @@ public class LockReservationFragment extends Fragment implements View.OnClickLis
     }
 
     private void initInstances(View rootView) {
-        // Init 'View' instance(s) with rootView.findViewById here
-
         timeDate = String.valueOf(timeDate());
-
-
-        username = MainActivity.intentUsername.getStringExtra("username");
-
-        RefreshMarketlocks refreshMarketlocks = new RefreshMarketlocks();
-        refreshMarketlocks.execute();
-
-        loadLockname loadLockname = new loadLockname();
-        loadLockname.execute();
-
-        loadProductType loadProductType = new loadProductType();
-        loadProductType.execute();
-
+        merchantId = LockReservationActivity.intent.getIntExtra("merchantId", 0);
+        marketId = LockReservationActivity.intent.getIntExtra("marketId", 0);
+        marketName = LockReservationActivity.intent.getStringExtra("marketName");
 
         btnReserve = rootView.findViewById(R.id.btnReserve);
         spProductType = rootView.findViewById(R.id.spProductType);
@@ -116,6 +116,8 @@ public class LockReservationFragment extends Fragment implements View.OnClickLis
         spLock = rootView.findViewById(R.id.spLock);
         tvDate = rootView.findViewById(R.id.date);
         tvDate.setText(timeDate);
+        tvMarketName = rootView.findViewById(R.id.tvMarketName);
+        tvMarketName.setText(marketName);
         tvA1 = rootView.findViewById(R.id.tvA1);
         tvA2 = rootView.findViewById(R.id.tvA2);
         tvA3 = rootView.findViewById(R.id.tvA3);
@@ -160,7 +162,17 @@ public class LockReservationFragment extends Fragment implements View.OnClickLis
         tvD9.setOnClickListener(this);
         btnReserve.setOnClickListener(this);
 
+        LoadDataToTv loadDataToTv = new LoadDataToTv();
+        loadDataToTv.execute();
 
+        loadLockname loadLockname = new loadLockname();
+        loadLockname.execute();
+
+        loadProductType loadProductType = new loadProductType();
+        loadProductType.execute();
+
+        MarketRuleDialogFragment marketRuleDialogFragment = new MarketRuleDialogFragment();
+        marketRuleDialogFragment.show(getFragmentManager(), "marketRuleDialogFragment");
     }
 
     @Override
@@ -196,170 +208,184 @@ public class LockReservationFragment extends Fragment implements View.OnClickLis
     @Override
     public void onClick(View view) {
         if (view == btnReserve) {
-            String lockName = spLock.getSelectedItem().toString().trim();
-            String productType = spProductType.getSelectedItem().toString().trim();
+            String marketLockName = spLock.getSelectedItem().toString().trim();
+            String productTypeName = spProductType.getSelectedItem().toString().trim();
 
-            if (lockName.equals("None")) {
+            int getMarketLockId = marketLockId[find(this.marketLockName, marketLockName)];
+            int getProductTypeId = productTypeId[find(this.productTypeName, productTypeName)];
+
+            if (marketLockName.equals("None")) {
                 Toast.makeText(getActivity(), "Please select lock", Toast.LENGTH_LONG).show();
             } else {
                 ReserveLock reserveLock = new ReserveLock();
-                reserveLock.execute(username, marketName, lockName, productType, timeDate);
+                reserveLock.execute(String.valueOf(getMarketLockId), String.valueOf(getProductTypeId));
 
                 loadLockname loadLockname = new loadLockname();
                 loadLockname.execute();
-
-
             }
 
-
         } else if (view == ivRefresh) {
-
-
-            RefreshMarketlocks refreshMarketlocks = new RefreshMarketlocks();
-            refreshMarketlocks.execute();
-
+            RefreshMarketLock refreshMarketLock = new RefreshMarketLock();
+            refreshMarketLock.execute();
         } else if (view == tvA1) {
-            showLockStatus("A1");
+            showLockDetails(1);
         } else if (view == tvA2) {
-            showLockStatus("A2");
+            showLockDetails(2);
         } else if (view == tvA3) {
-            showLockStatus("A3");
+            showLockDetails(3);
         } else if (view == tvB1) {
-            showLockStatus("B1");
+            showLockDetails(4);
         } else if (view == tvB2) {
-            showLockStatus("B2");
+            showLockDetails(5);
         } else if (view == tvB3) {
-            showLockStatus("B3");
+            showLockDetails(6);
         } else if (view == tvC1) {
-            showLockStatus("C1");
+            showLockDetails(7);
         } else if (view == tvC2) {
-            showLockStatus("C2");
+            showLockDetails(8);
         } else if (view == tvC3) {
-            showLockStatus("C3");
+            showLockDetails(9);
         } else if (view == tvC4) {
-            showLockStatus("C4");
+            showLockDetails(10);
         } else if (view == tvC5) {
-            showLockStatus("C5");
+            showLockDetails(11);
         } else if (view == tvD1) {
-            showLockStatus("D1");
+            showLockDetails(12);
         } else if (view == tvD2) {
-            showLockStatus("D2");
+            showLockDetails(13);
         } else if (view == tvD3) {
-            showLockStatus("D3");
+            showLockDetails(14);
         } else if (view == tvD4) {
-            showLockStatus("D4");
+            showLockDetails(15);
         } else if (view == tvD5) {
-            showLockStatus("D5");
+            showLockDetails(16);
         } else if (view == tvD6) {
-            showLockStatus("D6");
+            showLockDetails(17);
         } else if (view == tvD7) {
-            showLockStatus("D7");
+            showLockDetails(18);
         } else if (view == tvD8) {
-            showLockStatus("D8");
+            showLockDetails(19);
         } else if (view == tvD9) {
-            showLockStatus("D9");
+            showLockDetails(20);
         }
     }
 
-    private void setLockStatus(String lockName, Integer colorID) {
-        switch (lockName) {
-            case "A1":
+    private void setLockStatus(int marketLockId, Integer colorID) {
+        switch (marketLockId) {
+            case 1:
                 tvA1.setBackgroundResource(colorID);
+                tvA1.setClickable(true);
                 break;
-            case "A2":
+            case 2:
                 tvA2.setBackgroundResource(colorID);
+                tvA2.setClickable(true);
                 break;
-            case "A3":
+            case 3:
                 tvA3.setBackgroundResource(colorID);
+                tvA3.setClickable(true);
                 break;
-            case "B1":
+            case 4:
                 tvB1.setBackgroundResource(colorID);
+                tvB1.setClickable(true);
                 break;
-            case "B2":
+            case 5:
                 tvB2.setBackgroundResource(colorID);
+                tvB2.setClickable(true);
                 break;
-            case "B3":
+            case 6:
                 tvB3.setBackgroundResource(colorID);
+                tvB3.setClickable(true);
                 break;
-            case "C1":
+            case 7:
                 tvC1.setBackgroundResource(colorID);
+                tvC1.setClickable(true);
                 break;
-            case "C2":
+            case 8:
                 tvC2.setBackgroundResource(colorID);
+                tvC2.setClickable(true);
                 break;
-            case "C3":
+            case 9:
                 tvC3.setBackgroundResource(colorID);
+                tvC3.setClickable(true);
                 break;
-            case "C4":
+            case 10:
                 tvC4.setBackgroundResource(colorID);
+                tvC4.setClickable(true);
                 break;
-            case "C5":
+            case 11:
                 tvC5.setBackgroundResource(colorID);
+                tvC5.setClickable(true);
                 break;
-            case "D1":
+            case 12:
                 tvD1.setBackgroundResource(colorID);
+                tvD1.setClickable(true);
                 break;
-            case "D2":
+            case 13:
                 tvD2.setBackgroundResource(colorID);
+                tvD2.setClickable(true);
                 break;
-            case "D3":
+            case 14:
                 tvD3.setBackgroundResource(colorID);
+                tvD3.setClickable(true);
                 break;
-            case "D4":
+            case 15:
                 tvD4.setBackgroundResource(colorID);
+                tvD4.setClickable(true);
                 break;
-            case "D5":
+            case 16:
                 tvD5.setBackgroundResource(colorID);
+                tvD5.setClickable(true);
                 break;
-            case "D6":
+            case 17:
                 tvD6.setBackgroundResource(colorID);
+                tvD6.setClickable(true);
                 break;
-            case "D7":
+            case 18:
                 tvD7.setBackgroundResource(colorID);
+                tvD7.setClickable(true);
                 break;
-            case "D8":
+            case 19:
                 tvD8.setBackgroundResource(colorID);
+                tvD8.setClickable(true);
                 break;
-            case "D9":
+            case 20:
                 tvD9.setBackgroundResource(colorID);
+                tvD9.setClickable(true);
                 break;
-
-
         }
     }
 
-    private void showLockStatus(String lockName) {
-        lockNameForDelete = lockName;
+    private void showLockDetails(int marketLockId) {
         loadLockInformation lockInformation = new loadLockInformation();
-        lockInformation.execute(lockName, marketName, timeDate);
+        lockInformation.execute(String.valueOf(marketLockId));
     }
-
 
     private class ReserveLock extends AsyncTask<String, Void, String> {
-        public static final String URL = "http://www.jongtalad.com/doc/lock_reservation.php";
+        public static final String URL = "https://jongtalad-web-api.herokuapp.com/merchants/";
 
         @Override
         protected String doInBackground(String... values) {
+            String newUrl = URL + merchantId + "/markets/locks/" + values[0] + "/reserve";
             OkHttpClient okHttpClient = new OkHttpClient();
             RequestBody requestBody = new FormBody.Builder()
-                    .add("username", values[0])
-                    .add("marketName", values[1])
-                    .add("lockName", values[2])
-                    .add("productTypeName", values[3])
-                    .add("saleDate", values[4])
+                    .add("productTypeId", values[1])
+                    .add("price", String.valueOf(price))
+                    .add("saleDate", timeDate)
                     .build();
             Request request = new Request.Builder()
-                    .url(URL)
+                    .url(newUrl)
                     .post(requestBody)
                     .build();
 
             try {
                 Response response = okHttpClient.newCall(request).execute();
-                if (response.isSuccessful()) {
-                    return response.body().string();
-                } else {
-                    return "Not Success - code : " + response.code();
-                }
+                return response.body().string();
+                // I want to dealt with status code 409 in onPostExecute so that's why this is commented
+//                if (response.isSuccessful()) {
+//                    return response.body().string();
+//                } else {
+//                    return "Not Success - code : " + response.code();
+//                }
             } catch (IOException e) {
                 e.printStackTrace();
                 return "Error - " + e.getMessage();
@@ -369,105 +395,48 @@ public class LockReservationFragment extends Fragment implements View.OnClickLis
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
-            Log.d("ReserveLock", "onPostExecute: " + s);
-            if (s.trim().equals("1")) {
-                FirebaseMessaging.getInstance().subscribeToTopic("lockReserved");
-                setLockStatus(spLock.getSelectedItem().toString().trim(), R.color.lockStatusOuccupied);
-                RefreshMarketlocks refreshMarketlocks = new RefreshMarketlocks();
-                refreshMarketlocks.execute();
+            int resCode = 404;
+            int marketLockId = 0;
+            try {
+                JSONObject obj = new JSONObject(s);
+                resCode = obj.getInt("code");
+                JSONObject res = obj.getJSONObject("response");
+                marketLockId = res.getInt("reservedMarketLockId");
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+            if (resCode == 200) {
+                setLockStatus(marketLockId, R.color.lockStatusOuccupied);
                 LockReservedDialogFragment lockReserved = new LockReservedDialogFragment();
                 lockReserved.show(getFragmentManager(), "lockReservedDialog");
-            } else if (s.trim().equals("2")) {
-
+//                FirebaseMessaging.getInstance().subscribeToTopic("lockReserved");
+            } else if (resCode == 409) {
                 LockMaximumReservedDialogFragment lockMaximumReserved = new LockMaximumReservedDialogFragment();
                 lockMaximumReserved.show(getFragmentManager(), "lockMaximumReservedDialogFragment");
-
             } else {
-                Toast.makeText(getActivity(), "เกิดข้อผิดพลาด", Toast.LENGTH_LONG).show();
-
+                Toast.makeText(getActivity(), "Reserve failed", Toast.LENGTH_LONG).show();
             }
         }
     }
 
-    private class RefreshMarketlocks extends AsyncTask<Void, Void, String> {
-
-        private static final String URLstatusLock = "http://www.jongtalad.com/doc/load_lock_status.php";
-
-
-        @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute(s);
-
-//            Log.d("Json", "=>" + s);
-            try {
-
-                JSONArray jsonArray = new JSONArray(s);
-                for (int i = 0; i < jsonArray.length(); i++) {
-
-
-                    JSONObject jsonObject = jsonArray.getJSONObject(i);
-                    dataLock = jsonObject.getString("name");
-                    setLockStatus(dataLock, R.color.lockStatusOuccupied);
-//                        Log.d("dataLock", dataLock);
-
-
-                }
-
-
-            } catch (Exception e) {
-//                Log.d("Erorr", "e onPost ==>" + e.toString());
-            }
-
-        }
+    private class LoadDataToTv extends AsyncTask<Void, Void, String> {
+        private static final String URL = "https://jongtalad-web-api.herokuapp.com/markets/";
 
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
+            setMarketLockClickable(false);
+            loadingMarketDataDialog = ProgressDialog.show(getContext(), "Fetch market data", "Loading...", true, false);
         }
 
         @Override
         protected String doInBackground(Void... voids) {
-
-
-            try {
-
-
-                OkHttpClient okHttpClient = new OkHttpClient();
-                Request.Builder builder = new Request.Builder();
-                RequestBody requestBody = new FormBody.Builder()
-                        .add("reservationStatus", "2")
-                        .add("saleDate", timeDate)
-                        .add("marketName", marketName)
-                        .build();
-                Request request = builder.url(URLstatusLock).post(requestBody).build();
-                Response response = okHttpClient.newCall(request).execute();
-                return response.body().string();
-
-            } catch (Exception e) {
-
-//                Log.d("Dpost", "=>" + e);
-
-                return null;
-            }
-
-
-        }
-    }
-
-    private class loadLockname extends AsyncTask<Void, Void, String> {
-        public static final String URL = "http://www.jongtalad.com/doc/load_lock_status.php";
-
-        @Override
-        protected String doInBackground(Void... voids) {
+            String newUrl = URL + marketId + "/locks/types/" + 1 + "/?saleDate=" + timeDate;
             OkHttpClient okHttpClient = new OkHttpClient();
-            RequestBody requestBody = new FormBody.Builder()
-                    .add("reservationStatus", "1")
-                    .add("saleDate", timeDate)
-                    .add("marketName", marketName)
-                    .build();
+
             Request request = new Request.Builder()
-                    .url(URL)
-                    .post(requestBody)
+                    .url(newUrl)
+                    .get()
                     .build();
 
             try {
@@ -483,43 +452,175 @@ public class LockReservationFragment extends Fragment implements View.OnClickLis
             }
         }
 
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            int resCode = 404;
+            int[] marketLockId = {0};
+
+            try {
+                JSONObject obj = new JSONObject(s);
+                resCode = obj.getInt("code");
+                JSONArray res = obj.getJSONArray("response");
+                marketLockId = new int[res.length()];
+                for (int i = 0; i < res.length(); i++) {
+                    marketLockId[i] = res.getJSONObject(i).getInt("marketLockId");
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+
+            if (resCode == 200) {
+                for (int i = 0; i < marketLockId.length; i++) {
+                    setLockStatus(marketLockId[i], R.color.lockStatusOuccupied);
+                }
+            }
+        }
+    }
+
+    private class RefreshMarketLock extends AsyncTask<Void, Void, String> {
+        private static final String URL = "https://jongtalad-web-api.herokuapp.com/markets/";
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            loadingRefreshMarketLockDialog = ProgressDialog.show(getContext(), "Fetch market lock list", "Loading...", true, false);
+            for (int i = 0; i < 20; i++) {
+                setLockStatus(i, R.color.lockStatausNotOuccupied);
+            }
+            setMarketLockClickable(false);
+            loadLockname loadLockname = new loadLockname();
+            loadLockname.execute();
+
+        }
+
+        @Override
+        protected String doInBackground(Void... voids) {
+            String newUrl = URL + marketId + "/locks/types/" + 1 + "/?saleDate=" + timeDate;
+            OkHttpClient okHttpClient = new OkHttpClient();
+
+            Request request = new Request.Builder()
+                    .url(newUrl)
+                    .get()
+                    .build();
+
+            try {
+                Response response = okHttpClient.newCall(request).execute();
+                if (response.isSuccessful()) {
+                    return response.body().string();
+                } else {
+                    return "Not Success - code : " + response.code();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                return "Error - " + e.getMessage();
+            }
+        }
 
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
-            String[] lockList;
-            try {
-                JSONArray jsonArray = new JSONArray(s);
-                lockList = new String[jsonArray.length()];
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject jsonObject = jsonArray.getJSONObject(i);
-                    lockList[i] = (jsonObject.getString("name"));
-                }
+            int resCode = 404;
+            int[] marketLockId = {0};
 
+            try {
+                JSONObject obj = new JSONObject(s);
+                resCode = obj.getInt("code");
+                JSONArray res = obj.getJSONArray("response");
+                marketLockId = new int[res.length()];
+                for (int i = 0; i < res.length(); i++) {
+                    marketLockId[i] = res.getJSONObject(i).getInt("marketLockId");
+                }
             } catch (JSONException e) {
-                lockList = new String[1];
-                lockList[0] = "None";
+                e.printStackTrace();
+            }
+
+            loadingRefreshMarketLockDialog.dismiss();
+            if (resCode == 200) {
+                for (int i = 0; i < marketLockId.length; i++) {
+                    setLockStatus(marketLockId[i], R.color.lockStatusOuccupied);
+                }
+            }
+        }
+    }
+
+    private class loadLockname extends AsyncTask<String, Void, String> {
+        public static final String URL = "https://jongtalad-web-api.herokuapp.com/markets/";
+
+        @Override
+        protected String doInBackground(String... values) {
+            String newUrl = URL + marketId + "/locks/types/" + 0 + "/?saleDate=" + timeDate;
+
+            OkHttpClient okHttpClient = new OkHttpClient();
+
+            Request request = new Request.Builder()
+                    .url(newUrl)
+                    .get()
+                    .build();
+
+            try {
+                Response response = okHttpClient.newCall(request).execute();
+                if (response.isSuccessful()) {
+                    return response.body().string();
+                } else {
+                    return "Not Success - code : " + response.code();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                return "Error - " + e.getMessage();
+            }
+        }
+
+        @Override
+        protected void onPostExecute(String s) {
+            super.onPostExecute(s);
+            int resCode;
+            try {
+                JSONObject obj = new JSONObject(s);
+                resCode = obj.getInt("code");
+                JSONArray res = obj.getJSONArray("response");
+                marketLockId = new int[res.length()];
+                marketLockName = new String[res.length()];
+                for (int i = 0; i < res.length(); i++) {
+                    marketLockId[i] = res.getJSONObject(i).getInt("marketLockId");
+                    marketLockName[i] = res.getJSONObject(i).getString("marketLockName");
+                }
+            } catch (JSONException e) {
+                resCode = 404;
+                marketLockId = new int[1];
+                marketLockName = new String[1];
+
+                marketLockId[0] = 0;
+                marketLockName[0] = "None";
 
                 e.printStackTrace();
             }
 
+            if (resCode != 200) {
+                marketLockId = new int[1];
+                marketLockName = new String[1];
 
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.custom_spinner_view, lockList);
+                marketLockId[0] = 0;
+                marketLockName[0] = "None";
+            }
+
+
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.custom_spinner_view, marketLockName);
             adapter.setDropDownViewResource(R.layout.custom_spinner_drop_down);
             spLock.setAdapter(adapter);
         }
     }
 
     private class loadProductType extends AsyncTask<Void, Void, String> {
-        public static final String URL = "http://www.jongtalad.com/doc/loadProductType.php";
+        public static final String URL = "https://jongtalad-web-api.herokuapp.com/producttypes";
 
         @Override
         protected String doInBackground(Void... voids) {
             OkHttpClient okHttpClient = new OkHttpClient();
             Request request = new Request.Builder()
                     .url(URL)
+                    .get()
                     .build();
-
             try {
                 Response response = okHttpClient.newCall(request).execute();
                 if (response.isSuccessful()) {
@@ -536,48 +637,60 @@ public class LockReservationFragment extends Fragment implements View.OnClickLis
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
-            String[] productTypeList;
+            int resCode;
             try {
-
-
-                JSONArray jsonArray = new JSONArray(s);
-
-                productTypeList = new String[jsonArray.length()];
-
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject jsonObject = jsonArray.getJSONObject(i);
-                    productTypeList[i] = jsonObject.getString("name");
-
+                JSONObject obj = new JSONObject(s);
+                resCode = obj.getInt("code");
+                JSONArray res = obj.getJSONArray("response");
+                productTypeId = new int[res.length()];
+                productTypeName = new String[res.length()];
+                for (int i = 0; i < res.length(); i++) {
+                    productTypeId[i] = res.getJSONObject(i).getInt("productTypeId");
+                    productTypeName[i] = res.getJSONObject(i).getString("productTypeName");
                 }
+
             } catch (JSONException e) {
-                productTypeList = new String[1];
-                productTypeList[0] = "none";
+                resCode = 404;
+                productTypeId = new int[1];
+                productTypeName = new String[1];
+
+                productTypeId[0] = 0;
+                productTypeName[0] = "None";
                 e.printStackTrace();
             }
 
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.custom_spinner_view, productTypeList);
+            if (resCode != 200) {
+                productTypeId = new int[1];
+                productTypeName = new String[1];
+
+                productTypeId[0] = 0;
+                productTypeName[0] = "None";
+            }
+
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(getActivity(), R.layout.custom_spinner_view, productTypeName);
             adapter.setDropDownViewResource(R.layout.custom_spinner_drop_down);
             spProductType.setAdapter(adapter);
+            loadingMarketDataDialog.dismiss();
         }
     }
 
     private class loadLockInformation extends AsyncTask<String, Void, String> {
-        public static final String URL = "http://www.jongtalad.com/doc/load_lock_information.php";
+        public static final String URL = "https://jongtalad-web-api.herokuapp.com/markets/locks/";
 
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            loadingMarketDetailDialog = ProgressDialog.show(getContext(), "Fetch lock detail", "Loading...", true, false);
+        }
 
         @Override
         protected String doInBackground(String... values) {
+            String newUrl = URL + values[0] + "/detail/?saleDate=" + timeDate;
             OkHttpClient okHttpClient = new OkHttpClient();
 
-            RequestBody requestBody = new FormBody.Builder()
-                    .add("lockName", values[0])
-                    .add("marketName", values[1])
-                    .add("saleDate", values[2])
-                    .build();
-
             Request request = new Request.Builder()
-                    .url(URL)
-                    .post(requestBody)
+                    .url(newUrl)
+                    .get()
                     .build();
 
             try {
@@ -596,35 +709,52 @@ public class LockReservationFragment extends Fragment implements View.OnClickLis
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
-//             Log.d("data", s);
-            String lockName = null;
-            String name = "null";
+            int resCode = 404;
+            int[] resMerchantId = {0};
+            String[] resMerchantFirstName = {"None"};
+            String[] resMerchantLastname = {"None"};
+            String merchantFullname = "";
+            String[] productTypeName = {"None"};
+            String[] marketLockName = {"None"};
+            String showMerchantName = "";
 
-            String phonenumber = "null";
-            String productType = "null";
             try {
-                JSONArray jsonArray = new JSONArray(s);
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    JSONObject jsonObject = jsonArray.getJSONObject(i);
-                    lockName = jsonObject.getString("lockName");
-                    name = jsonObject.getString("merchantName");
-                    phonenumber = jsonObject.getString("phonenumber");
-                    productType = jsonObject.getString("productType");
-
+                JSONObject obj = new JSONObject(s);
+                resCode = obj.getInt("code");
+                JSONArray res = obj.getJSONArray("response");
+                resMerchantId = new int[res.length()];
+                resMerchantFirstName = new String[res.length()];
+                resMerchantLastname = new String[res.length()];
+                productTypeName = new String[res.length()];
+                marketLockName = new String[res.length()];
+                for (int i = 0; i < res.length(); i++) {
+                    if (res.getJSONObject(i).getString("merchantName") != "null") {
+                        resMerchantFirstName[i] = res.getJSONObject(i).getString("merchantName");
+                        resMerchantId[i] = res.getJSONObject(i).getInt("merchantId");
+                        resMerchantLastname[i] = res.getJSONObject(i).getString("merchantSurname");
+                        merchantFullname = resMerchantFirstName[i] + " " + resMerchantLastname[i];
+                    }
+                    productTypeName[i] = res.getJSONObject(i).getString("productTypeName");
+                    marketLockName[i] = res.getJSONObject(i).getString("marketLockName");
                 }
-
             } catch (JSONException e) {
                 e.printStackTrace();
-//                Log.d("Error -->", e.getMessage());
             }
-            if (lockName != null) {
+
+            if (resMerchantId[0] == merchantId) {
+                showMerchantName = "" + merchantFullname + "\n";
+            } else {
+                showMerchantName = "";
+            }
+
+            loadingMarketDetailDialog.dismiss();
+            if (resCode == 200) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-                builder.setTitle("รายละเอียดล็อค")
-                        .setMessage(lockName + "\n" +
-                                name + " " +
-                                phonenumber + "\n" +
-                                productType + "\n")
-                        .setNegativeButton("ปิดหน้าจอ", new DialogInterface.OnClickListener() {
+                builder.setTitle("Market Lock Details")
+                        .setMessage("" + marketLockName[0] + "\n" +
+                                showMerchantName +
+                                productTypeName[0])
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialogInterface, int i) {
                                 dialogInterface.dismiss();
@@ -637,51 +767,41 @@ public class LockReservationFragment extends Fragment implements View.OnClickLis
         }
     }
 
-    private class cancelLockReservation extends AsyncTask<String, Void, String> {
-        public static final String URL = "http://www.jongtalad.com/doc/cancel_lock_reservation.php";
-
-        @Override
-        protected String doInBackground(String... values) {
-            OkHttpClient okHttpClient = new OkHttpClient();
-
-            RequestBody requestBody = new FormBody.Builder()
-                    .add("lockName", values[0])
-                    .add("marketName", values[1])
-                    .add("saleDate", values[2])
-                    .build();
-
-            Request request = new Request.Builder()
-                    .url(URL)
-                    .post(requestBody)
-                    .build();
-
-            try {
-                Response response = okHttpClient.newCall(request).execute();
-                if (response.isSuccessful()) {
-                    return response.body().string();
-                } else {
-                    return "Not Success - code : " + response.code();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                return "Error - " + e.getMessage();
-            }
-        }
-
-        @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute(s);
-            setLockStatus(lockNameForDelete, R.color.lockStatausNotOuccupied);
-            loadLockname loadLockname = new loadLockname();
-            loadLockname.execute();
-        }
+    private void setMarketLockClickable(boolean clickable) {
+        tvA1.setClickable(clickable);
+        tvA2.setClickable(clickable);
+        tvA3.setClickable(clickable);
+        tvB1.setClickable(clickable);
+        tvB2.setClickable(clickable);
+        tvB3.setClickable(clickable);
+        tvC1.setClickable(clickable);
+        tvC2.setClickable(clickable);
+        tvC3.setClickable(clickable);
+        tvC4.setClickable(clickable);
+        tvC5.setClickable(clickable);
+        tvD1.setClickable(clickable);
+        tvD2.setClickable(clickable);
+        tvD3.setClickable(clickable);
+        tvD4.setClickable(clickable);
+        tvD5.setClickable(clickable);
+        tvD6.setClickable(clickable);
+        tvD7.setClickable(clickable);
+        tvD8.setClickable(clickable);
+        tvD9.setClickable(clickable);
     }
 
     private Date timeDate() {
-
         long millis = System.currentTimeMillis();
         java.sql.Date date = new java.sql.Date(millis);
         return date;
+    }
 
+    // Function to find the index of an element in a primitive array in Java
+    public static int find(String[] a, String target) {
+        for (int i = 0; i < a.length; i++)
+            if (a[i] == target)
+                return i;
+
+        return -1;
     }
 }

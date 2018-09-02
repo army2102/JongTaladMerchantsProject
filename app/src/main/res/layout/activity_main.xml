@@ -33,8 +33,6 @@
     </LinearLayout>
 
 
-
-
     <!--Menu-->
     <LinearLayout
         android:layout_width="@dimen/drawer_menu_width"
@@ -48,22 +46,24 @@
             android:id="@+id/btnMarketList"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:contentDescription="รายชื่อตลาด"
-            android:text="รายชื่อตลาด" />
+            android:contentDescription="Market List"
+            android:text="Market List" />
 
         <Button
+            android:visibility="invisible"
             android:id="@+id/btnProfile"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:contentDescription="โปรไฟล์"
-            android:text="โปรไฟล์" />
+            android:contentDescription="Profile"
+            android:text="Profile" />
 
         <Button
+            android:visibility="invisible"
             android:id="@+id/btnReport"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:contentDescription="Report"
-            android:text="Report" />
+            android:contentDescription="History"
+            android:text="History" />
 
         <View
             android:layout_weight="1"

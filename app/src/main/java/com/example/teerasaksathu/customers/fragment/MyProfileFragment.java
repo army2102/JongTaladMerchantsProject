@@ -78,7 +78,7 @@ public class MyProfileFragment extends Fragment implements View.OnClickListener 
         tvPhonenumber = rootView.findViewById(R.id.tvPhonenumber);
         btnEdit = rootView.findViewById(R.id.btnEdit);
         ivImg = rootView.findViewById(R.id.ivImg);
-        username = MainActivity.intentUsername.getStringExtra("username");
+//        username = MainActivity.intentUsername.getStringExtra("username");
         loadUserData loadUserData = new loadUserData();
         loadUserData.execute(username);
 

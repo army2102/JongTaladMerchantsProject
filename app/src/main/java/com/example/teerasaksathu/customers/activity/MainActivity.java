@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Toolbar toolbar;
     private DrawerLayout drawerLayout;
     private ActionBarDrawerToggle actionBarDrawerToggle;
-    public static Intent intentUsername;
+    public static Intent intent;
     private Button btnMarketList;
     private Button btnProfile;
     private Button btnReport;
@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     public void initInstances() {
-        intentUsername = getIntent();
+        intent = getIntent();
         toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         drawerLayout = findViewById(R.id.drawerLayout);
@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 R.string.open_drawer,
                 R.string.close_drawer);
         drawerLayout.addDrawerListener(actionBarDrawerToggle);
-        getSupportActionBar().setTitle("จองตลาด");
+        getSupportActionBar().setTitle("Jongtalad");
         getSupportActionBar().setHomeButtonEnabled(true);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
@@ -117,7 +117,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             FirebaseMessaging.getInstance().unsubscribeFromTopic("logined");
             SharedPreferences prefs = getSharedPreferences("user_token", Context.MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
-            editor.putString("logined", null);
+            editor.putInt("logined", 0);
             editor.apply();
             Intent intent = new Intent(MainActivity.this, LoginActivity.class);
             startActivity(intent);

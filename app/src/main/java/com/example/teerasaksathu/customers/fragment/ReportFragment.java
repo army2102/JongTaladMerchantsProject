@@ -56,7 +56,7 @@ public class ReportFragment extends Fragment {
     }
 
     private void initInstances(View rootView) {
-        username = MainActivity.intentUsername.getStringExtra("username");
+//        username = MainActivity.intentUsername.getStringExtra("username");
         report = rootView.findViewById(R.id.lvReservedHistoryList);
         load_Reprot_data load_reprot_data = new load_Reprot_data();
         load_reprot_data.execute(username);

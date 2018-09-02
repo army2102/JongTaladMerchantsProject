@@ -15,10 +15,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.teerasaksathu.customers.R;
-import com.example.teerasaksathu.customers.activity.EditProfileActivity;
 import com.example.teerasaksathu.customers.activity.LoginActivity;
-import com.example.teerasaksathu.customers.activity.MainActivity;
-import com.example.teerasaksathu.customers.activity.RegisterActivity;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.storage.FirebaseStorage;
@@ -40,8 +37,8 @@ public class RegisterFragment extends Fragment implements View.OnClickListener {
     Button conflButtonrm;
     EditText editTextID_card, editText_Name, editText_Surname, editText_Phone,
             editText_Username, editText_Password, editText_conflrmPassWord;
-    String ID_CardString, nameString, surNameString,
-            phoneString, usernameString, passwordString, conlrmPassWordString;
+    String merchantIdCard, merchantName, merchantSurname,
+            merchantPhonenumber, username, password, confirmPassword;
     private String filePath;
     private StorageReference mStorageRef;
     private Button btnUploadImage;
@@ -66,7 +63,6 @@ public class RegisterFragment extends Fragment implements View.OnClickListener {
     }
 
     private void initInstances(View rootView) {
-        // Init 'View' instance(s) with rootView.findViewById here
         conflButtonrm = rootView.findViewById(R.id.btncomflrmregister);
         btnUploadImage = rootView.findViewById(R.id.btnUploadImage);
         editTextID_card = rootView.findViewById(R.id.edidcard);
@@ -114,55 +110,49 @@ public class RegisterFragment extends Fragment implements View.OnClickListener {
 
     @Override
     public void onClick(View view) {
-
         if (view == conflButtonrm) {
             checkvalue();
         }
-        else if (view == btnUploadImage) {
-            Intent intent = new Intent();
-            intent.setType("image/*");
-            intent.setAction(Intent.ACTION_PICK);
-            startActivityForResult(Intent.createChooser(intent, "โปรดเลือกรูป"), 1);
-
-        }
-
+//        else if (view == btnUploadImage) {
+//            Intent intent = new Intent();
+//            intent.setType("image/*");
+//            intent.setAction(Intent.ACTION_PICK);
+//            startActivityForResult(Intent.createChooser(intent, "โปรดเลือกรูป"), 1);
+//
+//        }
     }
 
     private void checkvalue() {
+        merchantName = editText_Name.getText().toString().trim();
+        merchantSurname = editText_Surname.getText().toString().trim();
+        merchantPhonenumber = editText_Phone.getText().toString().trim();
+        merchantIdCard = editTextID_card.getText().toString().trim();
+        username = editText_Username.getText().toString().trim();
+        password = editText_Password.getText().toString().trim();
+        confirmPassword = editText_conflrmPassWord.getText().toString().trim();
 
-        ID_CardString = editTextID_card.getText().toString().trim();
-        nameString = editText_Name.getText().toString().trim();
-        surNameString = editText_Surname.getText().toString().trim();
-        phoneString = editText_Phone.getText().toString().trim();
-        usernameString = editText_Username.getText().toString().trim();
-        passwordString = editText_Password.getText().toString().trim();
-        conlrmPassWordString = editText_conflrmPassWord.getText().toString().trim();
-
-
-        if (ID_CardString.length() == 0 || nameString.length() == 0 || surNameString.length() == 0 || phoneString.length() == 0 || usernameString.length() == 0 || passwordString.length() == 0 || conlrmPassWordString.length() == 0) {
-            Toast.makeText(getActivity(), "กรอกให้ครบทุกช่อง", Toast.LENGTH_SHORT).show();
+        if (merchantIdCard.length() == 0 || merchantName.length() == 0 || merchantSurname.length() == 0 || merchantPhonenumber.length() == 0 || username.length() == 0 || password.length() == 0 || confirmPassword.length() == 0) {
+            Toast.makeText(getActivity(), "", Toast.LENGTH_SHORT).show();
         } else {
-            if (ID_CardString.length() != 13) {
+            if (merchantIdCard.length() != 13) {
                 Toast.makeText(getActivity(), "กรอกเลขบัตรประจำตัวประชาชนให้ครบ 13 หลัก", Toast.LENGTH_SHORT).show();
             } else {
-                if (passwordString.length() < 8) {
+                if (password.length() < 8) {
                     Toast.makeText(getActivity(), "กรอก password อย่างน้อย 8 ตัว", Toast.LENGTH_SHORT).show();
                 } else {
-                    if (passwordString.equals(conlrmPassWordString)) {
+                    if (password.equals(confirmPassword)) {
 
-                        if (phoneString.length() != 10) {
+                        if (merchantPhonenumber.length() != 10) {
                             Toast.makeText(getActivity(), "กรอกหมายเลขโทรศัพท์ให้ครบ 10 หลัก", Toast.LENGTH_SHORT).show();
                         } else {
-
-
                             Register register = new Register();
-                            register.execute(ID_CardString, nameString, surNameString, phoneString, usernameString, passwordString);
+                            register.execute(merchantIdCard, merchantName, merchantSurname, merchantPhonenumber, username, password);
 
                             if (filePath != null) {
                                 Log.d("UploadImage", "Image has a path");
                                 mStorageRef = FirebaseStorage.getInstance().getReference();
                                 Uri file = Uri.fromFile(new File(filePath));
-                                StorageReference riversRef = mStorageRef.child("Merchants/" + usernameString);
+                                StorageReference riversRef = mStorageRef.child("Merchants/" + username);
 
                                 riversRef.putFile(file)
                                         .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -173,7 +163,7 @@ public class RegisterFragment extends Fragment implements View.OnClickListener {
                                                 Log.d("UploadImage", "Image uploaded : " + pictureUrl);
 
                                                 UploadProfileImage uploadProfileImage = new UploadProfileImage();
-                                                uploadProfileImage.execute(usernameString, pictureUrl.toString());
+                                                uploadProfileImage.execute(username, pictureUrl.toString());
                                             }
                                         })
                                         .addOnFailureListener(new OnFailureListener() {
@@ -187,8 +177,6 @@ public class RegisterFragment extends Fragment implements View.OnClickListener {
                                         });
 
                             }
-
-
                         }
                     } else {
                         Toast.makeText(getActivity(), "password ไม่ตรงกัน", Toast.LENGTH_SHORT).show();
